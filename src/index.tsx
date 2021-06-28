@@ -2,6 +2,7 @@ import * as esbuild from 'esbuild-wasm';
 import ReactDOM from 'react-dom';
 import { useEffect, useState, useRef } from 'react';
 import { unpkgPathPlugin } from './plugins/unpkg-path-plugin';
+import { fetchPlugin } from './plugins/fetch-plugin';
 
 const App = () => {
 	const ref = useRef<any>(); // -> ref.current = any value;
@@ -14,7 +15,7 @@ const App = () => {
 	const startService = async () => {
 		ref.current = await esbuild.startService({
 			worker: true,
-			wasmURL: '/esbuild.wasm', // compiled binary /public/esbuild.wasm
+			wasmURL: 'https://unpkg.com/esbuild-wasm@0.8.27/esbuild.wasm', // compiled binary /public/esbuild.wasm
 		});
 	};
 
@@ -27,7 +28,7 @@ const App = () => {
 			entryPoints: ['index.js'],
 			bundle: true,
 			write: false,
-			plugins: [unpkgPathPlugin(input)],
+			plugins: [unpkgPathPlugin(), fetchPlugin(input)],
 			define: {
 				'process.env.NODE_ENV': '"production"', //process머시기를 : "production"으로 해준다.
 				global: 'window', // 브라우저 안에서 코드 실행시키고 싶으면 이거 써야해용 이라고 구글신이 말해줌.

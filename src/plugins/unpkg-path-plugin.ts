@@ -1,12 +1,6 @@
 import * as esbuild from 'esbuild-wasm';
-import axios from 'axios';
-import localForage from 'localforage';
 
-const fileCache = localForage.createInstance({
-	name: 'filecache',
-});
-
-export const unpkgPathPlugin = (inputCode: string) => {
+export const unpkgPathPlugin = () => {
 	return {
 		name: 'unpkg-path-plugin', //debugging purpose
 		setup(build: esbuild.PluginBuild) {
@@ -21,14 +15,29 @@ export const unpkgPathPlugin = (inputCode: string) => {
             4. 만약 있다면 다시 onResolve로 넘어가면서 저 선언된 파일들이 어디있는지 다시 찾아낸다.
             5. 다시 onLoad가 실행되면서 파일을 로드한다.  (1,2 가 반복된다.)
       */
+
+			// Handle root entry file of 'index.js'
+			build.onResolve({ filter: /(^index\.js$)/ }, () => {
+				return { path: 'index.js', namespace: 'a' };
+			});
+
+			// Handle relative paths in a module
+			build.onResolve({ filter: /^\.+\// }, (args: any) => {
+				// === 	(args.path.includes('./') || args.path.includes('../')
+				return {
+					namespace: 'a',
+					path: new URL(args.path, 'https://unpkg.com' + args.resolveDir + '/')
+						.href,
+				};
+			});
+
+			// Handle main file of a module
 			build.onResolve({ filter: /.*/ }, async (args: any) => {
+				// ->  /.*/ === root/ main
 				// 여기서 인자로 있는 filter는 우리가 실행해야 할 파일 이름을 뜻한다. js...ts...
 				// 만약 build.onLoad({ filter: /.*/ , namespace: 'b' } 라고 쓰면
 				// B라는 네임스페이스를 가진 파일들에게만 onLoad 함수가 작동될 것이다.
-				console.log('onResolve', args);
-				if (args.path === 'index.js') {
-					return { path: args.path, namespace: 'a' };
-				}
+				// console.log('onResolve', args);
 
 				/*
                 args.path가 /sth 이런식으로 나올 경우. 
@@ -41,59 +50,10 @@ export const unpkgPathPlugin = (inputCode: string) => {
         */
 
 				// resolveDir를 이용하고 new URL 생성자 메소드를 이용해서  정확한 주소를 찾지 못하는 문제를 해결했다
-				if (args.path.includes('./') || args.path.includes('../')) {
-					return {
-						namespace: 'a',
-						path: new URL(
-							args.path,
-							'https://unpkg.com' + args.resolveDir + '/'
-						).href,
-					};
-				}
 				return {
 					namespace: 'a',
 					path: `https://unpkg.com/${args.path}`,
 				};
-			});
-
-			build.onLoad({ filter: /.*/ }, async (args: any) => {
-				console.log('onLoad', args);
-
-				if (args.path === 'index.js') {
-					return {
-						loader: 'jsx',
-						contents: inputCode,
-					};
-				}
-
-				// 1. 이미 이 파일이 페치 되었는지, 이미 캐시되어져있는지 체크한다.
-
-				const cachedResult = await fileCache.getItem<esbuild.OnLoadResult>(
-					args.path
-				);
-
-				// 2. 만약 이미 되어있다면 리턴 바로 해준다.
-				if (cachedResult) {
-					return cachedResult;
-				}
-				// 3. 그렇지 않은 경우 -------------------
-				const { data, request } = await axios.get(args.path);
-				// args.path가 키가 되어준다.
-
-				const result: esbuild.OnLoadResult = {
-					loader: 'jsx',
-					contents: data,
-					resolveDir: new URL('./', request.responseURL).pathname, //where we found the original file -> where is THE DIRECTORY that we found xd
-					// request.resonseURL => https://unpkg.com/pkgName/someOtherFolder/index.js
-					// new URL.pathName => /pkgName/someOtherFolder/
-					// new URL.href => https://unpkg.com/pkgName/someOtherFolder/
-					// resolveDir => /pkgName/someOtherFolder
-				};
-
-				// 4. 캐시에 response를 저장해준다.
-				await fileCache.setItem(args.path, result);
-
-				return result;
 			});
 		},
 	};
