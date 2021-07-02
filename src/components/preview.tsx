@@ -3,6 +3,7 @@ import './preview.css';
 
 interface PreviewProps {
 	code: string;
+	bundlingErr: string;
 }
 
 const html = `
@@ -11,15 +12,24 @@ const html = `
   <body>
     <div id="root"></div>
     <script>
+    const handleError = (err) => {
+      const root = document.querySelector('#root');
+      root.innerHTML = '<div style="color: red;"><h4> ERROR !</h4>' + err + '</div>'
+      throw err;
+    }
+
+    window.addEventListener('error', (event) => {
+      event.preventDefault();
+      handleError(event.error);
+    });
+
     window.addEventListener('message', (event) => {
       //coming from parent document.
 
       try {
         eval(event.data);
       } catch (err) {
-        const root = document.querySelector('#root');
-        root.innerHTML = '<div style="color: red;"><h4> ERROR !</h4>' + err + '</div>'
-        throw err;
+        handleError(err);
       }        
     }, false);
     </script>
@@ -27,7 +37,7 @@ const html = `
 </html
 `;
 
-const Preview: React.FC<PreviewProps> = ({ code }) => {
+const Preview: React.FC<PreviewProps> = ({ code, bundlingErr }) => {
 	const iframeRef = useRef<any>();
 
 	useEffect(() => {
@@ -51,6 +61,7 @@ allow-scripts를 써줌으로써 iFrame은 이제 script tag를 실행할 수 �
 				srcDoc={html}
 				title="preview"
 			/>
+			{bundlingErr && <div className="preview-err">{bundlingErr}</div>}
 		</div>
 	);
 };

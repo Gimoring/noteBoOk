@@ -20,17 +20,22 @@ export default async function bundle(rawCode: string) {
     window.postMessage() 메소드는 Window 오브젝트 사이에서 안전하게 cross-origin 통신을 할 수 있게 합니다. 
     예시로, 페이지와 생성된 팝업 간의 통신이나, 페이지와 페이지 안의 iframe 간의 통신에 사용할 수 있습니다.
   */
-
-	const result = await service.build({
-		entryPoints: ['index.js'],
-		bundle: true,
-		write: false,
-		plugins: [unpkgPathPlugin(), fetchPlugin(rawCode)],
-		define: {
-			'process.env.NODE_ENV': '"production"', //process머시기를 : "production"으로 해준다.
-			global: 'window', // 브라우저 안에서 코드 실행시키고 싶으면 이거 써야해용 이라고 구글신이 말해줌.
-		},
-	});
-
-	return result.outputFiles[0].text;
+	try {
+		const result = await service.build({
+			entryPoints: ['index.js'],
+			bundle: true,
+			write: false,
+			plugins: [unpkgPathPlugin(), fetchPlugin(rawCode)],
+			define: {
+				'process.env.NODE_ENV': '"production"', //process머시기를 : "production"으로 해준다.
+				global: 'window', // 브라우저 안에서 코드 실행시키고 싶으면 이거 써야해용 이라고 구글신이 말해줌.
+			},
+		});
+		return { code: result.outputFiles[0].text, err: '' };
+	} catch (err) {
+		return {
+			code: '',
+			err: err.message,
+		};
+	}
 }

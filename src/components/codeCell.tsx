@@ -6,13 +6,15 @@ import Resizable from './resizable';
 
 const CodeCell = () => {
 	const [code, setCode] = useState('');
+	const [err, setErr] = useState('');
 	const [input, setInput] = useState(''); // input
 
 	useEffect(() => {
 		const timer = setTimeout(async () => {
 			const output = await bundle(input);
-			setCode(output);
-		}, 1500);
+			setCode(output.code);
+			setErr(output.err);
+		}, 800);
 		// 유저가 입력할 때마다 이전의 타이머는 없어지고 다시 시작해야 됨.
 		// -> input이 변경될 때 마다 timer는 실행될 것임.
 		// -> 변경 멈추면 2초 후에 timer가 시작됨. 그리고 timer를 clean시킴.
@@ -33,7 +35,7 @@ const CodeCell = () => {
 						}}
 					/>
 				</Resizable>
-				<Preview code={code} />
+				<Preview code={code} bundlingErr={err} />
 			</div>
 		</Resizable>
 	);

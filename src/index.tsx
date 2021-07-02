@@ -1,10 +1,13 @@
 import ReactDOM from 'react-dom';
-import CodeCell from './components/codeCell';
+// import CodeCell from './components/codeCell';
+import './index.css';
+import TextEditor from './components/text-editor';
 
 const App = () => {
 	return (
 		<>
-			<CodeCell />
+			{/* <CodeCell /> */}
+			<TextEditor />
 		</>
 	);
 };

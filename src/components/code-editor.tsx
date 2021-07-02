@@ -59,7 +59,10 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ initialValue, onChange }) => {
 
 	return (
 		<div className="editor-wrapper">
-			<button className="prettyButton" onClick={onFormatClick}>
+			<button
+				className="bg-indigo-200 hover:bg-indigo-500 rounded-md shadow-lg prettyButton"
+				onClick={onFormatClick}
+			>
 				이쁘게 하기!
 			</button>
 			<MonacoEditor
